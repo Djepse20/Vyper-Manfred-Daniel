@@ -11,6 +11,7 @@ auctionstarttime: public(uint256)
 auctionend: public(uint256)
 temp: uint256
 result: uint256
+pricetemp: decimal
 auctionstartingprice: public(uint256)
 auctioncurrentprice: public(uint256)
 auctionactive: public(bool)
@@ -22,8 +23,6 @@ bidderid: uint256
 event currentpriceview:
     value: uint256
     sender: indexed(address)
-
-
 
 #hashmap
 bid_index: HashMap[address, uint256]
@@ -44,6 +43,7 @@ def __init__(_auctiontime: uint256,_item: String[1000],_shares: uint256,_auction
     self.bidderid = 0
     self.auctionactive = True
     self.beneficiarybalance = 0
+    self.pricetemp = 0.0
 
 @internal
 def _priceslope():
@@ -58,15 +58,10 @@ def _priceslope():
     self.temp = self.result
 
 @external
-def currentprice():
-    self._priceslope()
-    log currentpriceview(self.auctioncurrentprice, msg.sender)
-    
-
-@external
 @view
-def auctionendcheck() -> uint256:
-    return self.auctionend
+def currentprice() -> uint256:
+    log currentpriceview(self.auctioncurrentprice, msg.sender)
+    return self.auctioncurrentprice
 
 @external
 @view
@@ -82,9 +77,11 @@ def bid(shares: uint256):
     
     assert block.timestamp > self.auctionstarttime, "The auction has not started yet!"
 
-    if self.shares - shares <= 0:
-        return
-    assert msg.value * (10**18) >= (shares * self.auctioncurrentprice), "The bid is too low compared to the current price!"
+    assert self.shares - shares != 0, "There is no more shares left!"
+
+    self._priceslope()
+
+    assert msg.value >= (shares * self.auctioncurrentprice), "The bid is too low compared to the current price!"
 
     self.bid_index[msg.sender] = shares
     self.shares -= shares
