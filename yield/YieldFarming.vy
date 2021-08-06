@@ -25,6 +25,7 @@ def allowance(_owner: address, _spender: address) -> uint256:
     return self.allowance[_owner][_spender]
 @external
 def approve(_spender: address, _value: uint256) -> bool:
+    assert self._balanceof[_from] >= _value, "not enough tokens in balance"
     self.allowance[msg.sender][_spender] = value
     log Approval(msg.sender, _spender, _value)
     return true
@@ -40,7 +41,8 @@ def transferCaller(_from: address,_to: address, _value: uint256) -> bool:
 #transfer tokens form one adress to another
 @external
 def transferFrom(_from: address, _to: address, _value: uint256) -> bool:
-    assert self.allowance[msg.sender][_from] >= _value, "not allowed to transfer that amount of tokens from given adress"
+    assert self.allowance[_from][msg.sender] >= _value, "not allowed to transfer that amount of tokens from given adress"
+    self.allowance[_from][msg.sender] -= _value
     return transferCaller(_from, _to: address, _value: uint256)
 
 @external
