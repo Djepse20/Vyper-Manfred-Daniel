@@ -1,7 +1,8 @@
 Github repo til vyper projekter til oplæring
 
-Der er følgende branches med hver sine formål:
+Målet for oplæring Manfred: 
 
-Main - Fælles Branch med fælles projekter lavet af både Manfred og Daniel  
-Manfred - Projekter lavet af Manfred.  
-Daniel - Projekter lavet af Daniel.  
+* Skabe en simpel dutch auction, som har simpel funktionalitet.
+* Få forståelse af hvordan ERC20 tokens implementeres og hvordan man laver sin egen token.
+* Skabe en dutch auction, hvor der kan bydes på en selvskabt ERC20 token med ethereum.
+* Arbejde videre med andre relevante projekter kommer senere. 
