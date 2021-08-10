@@ -9,22 +9,25 @@ from vyper.interfaces import ERC20
 from . import YieldFarm 
 implements: ERC20
 
+#todo
+#make sure the fees
 
 #variables
 _totalsupply: public(uint256)
 _farmToken: public(address)
 _rewardToken: public(address)
 _balanceof: public(HashMap[address, uint256])
-_blockTradedAt: public(HashMap[address, uint256])
+_blockDepositedAt: public(HashMap[address, uint256])
 _DepositedByUser: public(HashMap[address, uint256])
 _allowance: public(HashMap[address, HashMap[address,uint256]])
-
+_startBlock: public(uint256)
 @external
 def __init__(_totalsupply: uint256, _farmToken: address, _rewardToken: address):
     self._totalsupply = 10**8
     self._balanceof[self] = _totalsupply
     self.__farmToken = _farmToken
     self._rewardToken = _rewardToken
+    self._startBlock = block.number
 
 event Transfer:
     _from: indexed(address)
@@ -84,16 +87,24 @@ def deposit() -> bool:
 
 @external
 def withdraw() -> bool:
-    
+    reward: GetRewards(msg.sender)
+    ERC20(self.rewardtoken).transferFrom(self,msg.sender,reward)
+    ERC20
     return True
 
-#Get Reward For Specific user
+#Get Reward For user based on time and percentage of the total amount
 @internal
 @view
 def GetRewards(_AdressToReward: address) -> uint256:
-    UserBalance: uint256 = _DepositedByUser[_AdressToReward]
+    if block.number - self._blockDepositedAt[_AdressToReward] == 0:
+        return 0
+    UserBalance: uint256 = _DepositedByUser[_AdressToReward]+(block.number-_blockDepositedAt[_AdressToReward])
     TotalBalance: uint256 = ERC20(self.farmToken).balanceOf(self)
-    PercentageOfTotal: decimal = convert(TotalBalance)/convert(UserBalance, decimal)
-    Reward: uint256 = convert(
-        convert(ERC20(self.rewardtoken).balanceOf(self))
+    PercentageOfTotal: decimal = convert(UserBalance, decimal)/convert(TotalBalance,decimal)*100.0
+    PercentageOfTime: decimal = convert(block.number-self._blockDepositedAt[_AdressToReward],decimal)/convert(block.number-self._startBlock, decimal)
+
+    return convert(
+        convert(ERC20(self.rewardtoken).balanceOf(self),decimal)*(PercentageOfTotal*PercentageOfTime)
     ,uint256)
+    return 
+
