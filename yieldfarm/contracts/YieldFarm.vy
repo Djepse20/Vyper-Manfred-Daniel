@@ -21,6 +21,7 @@ _blockDepositedAt: public(HashMap[address, uint256])
 _DepositedByUser: public(HashMap[address, uint256])
 _allowance: public(HashMap[address, HashMap[address,uint256]])
 _startBlock: public(uint256)
+_userStartBlock: public(HashMap[address,uint256])
 @external
 def __init__(_totalsupply: uint256, _farmToken: address, _rewardToken: address):
     self._totalsupply = 10**8
@@ -77,11 +78,18 @@ def transfer(_to: address, _value: uint256) -> bool:
 
 
 @external
-def withdraw( _to: address, _value: uint256):
-    YieldFarm(self).transfer(_to, _value)
+def withdraw( _value: uint256):
+    _rewards: uint256 = self.GetRewards()
+    _WithdrawValue = min(self._DepositedByUser[msg.sender],_value)
+    ERC20(self._farmToken).transfer(msg.sender, _WithdrawValue)
+    ERC20(self._rewardToken).transfer(msg.sender,rewards)
 
 @external
-def deposit() -> bool:
+def deposit(_value: uint256) -> bool:
+        self._userStartBlock[msg.sender] = self._startBlock
+        self._DepositedByUser[msg.sender] = _value
+        self._blockDepositedAt[msg.sender] = block.number
+
         ERC20(self.farmToken).transfer(self,_value)
     return True
 
@@ -101,7 +109,7 @@ def GetRewards(_AdressToReward: address) -> uint256:
     UserBalance: uint256 = _DepositedByUser[_AdressToReward]+(block.number-_blockDepositedAt[_AdressToReward])
     TotalBalance: uint256 = ERC20(self.farmToken).balanceOf(self)
     PercentageOfTotal: decimal = convert(UserBalance, decimal)/convert(TotalBalance,decimal)*100.0
-    PercentageOfTime: decimal = convert(block.number-self._blockDepositedAt[_AdressToReward],decimal)/convert(block.number-self._startBlock, decimal)
+    PercentageOfTime: decimal = convert(block.number-self._blockDepositedAt[_AdressToReward],decimal)/convert(block.number-self._userStartBlock[_AdressToReward], decimal)
 
     return convert(
         convert(ERC20(self.rewardtoken).balanceOf(self),decimal)*(PercentageOfTotal*PercentageOfTime)
