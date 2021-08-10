@@ -96,7 +96,7 @@ def withdraw() -> bool:
 @internal
 @view
 def GetRewards(_AdressToReward: address) -> uint256:
-    if block.number - self._blockDepositedAt[_AdressToReward] == 0:
+    if block.number - self._startBlock == 0:
         return 0
     UserBalance: uint256 = _DepositedByUser[_AdressToReward]+(block.number-_blockDepositedAt[_AdressToReward])
     TotalBalance: uint256 = ERC20(self.farmToken).balanceOf(self)
