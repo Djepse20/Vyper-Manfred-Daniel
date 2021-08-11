@@ -21,6 +21,7 @@ _blockDepositedAt: public(HashMap[address, uint256])
 _DepositedByUser: public(HashMap[address, uint256])
 _allowance: public(HashMap[address, HashMap[address,uint256]])
 _startBlock: public(uint256)
+_rewardsForStartBlock
 _userStartBlock: public(HashMap[address,uint256])
 @external
 def __init__(_totalsupply: uint256, _farmToken: address, _rewardToken: address):
@@ -40,7 +41,13 @@ event Approval:
     _spender: indexed(address)
     _value: uint256
 
+event Deposit:
+    _depositor: indexed(address)
+    _value: uint256
 
+event Withdraw:
+    _withdrawer: indexed(address)
+    _value: uint256
 @external
 def balanceOf(_owner: address) -> uint256:
     return self._balanceof[_owner]
@@ -81,24 +88,24 @@ def transfer(_to: address, _value: uint256) -> bool:
 def withdraw( _value: uint256):
     _rewards: uint256 = self.GetRewards()
     _WithdrawValue = min(self._DepositedByUser[msg.sender],_value)
+    self._DepositedByUser[msg.sender] -= _WithdrawValue
     ERC20(self._farmToken).transfer(msg.sender, _WithdrawValue)
     ERC20(self._rewardToken).transfer(msg.sender,rewards)
+    Withdraw(msg.sender,_WithdrawValue)
 
 @external
 def deposit(_value: uint256) -> bool:
         self._userStartBlock[msg.sender] = self._startBlock
         self._DepositedByUser[msg.sender] = _value
         self._blockDepositedAt[msg.sender] = block.number
-
         ERC20(self.farmToken).transfer(self,_value)
+        Depost(msg.sender,_value)
     return True
+
 
 @external
-def withdraw() -> bool:
-    reward: GetRewards(msg.sender)
-    ERC20(self.rewardtoken).transferFrom(self,msg.sender,reward)
-    ERC20
-    return True
+def NewStartBlock():
+    
 
 #Get Reward For user based on time and percentage of the total amount
 @internal
