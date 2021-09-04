@@ -6,12 +6,12 @@ from vyper.interfaces import ERC20
 #importing the contract to the contract
 #makes it possible to call external functions from the contract 
 #Use YieldFarm(self).external_function_name to call a given function
+
 from . import YieldFarm 
 implements: ERC20
 
-#todo
-#make sure the fees
-
+#TODO:
+#implement how the value paid per token is dertermined.
 #variables
 _totalsupply: public(uint256)
 _farmToken: public(address)
@@ -20,16 +20,23 @@ _balanceof: public(HashMap[address, uint256])
 _blockDepositedAt: public(HashMap[address, uint256])
 _DepositedByUser: public(HashMap[address, uint256])
 _allowance: public(HashMap[address, HashMap[address,uint256]])
+_endBlock: public(uint256)
+_owner: public(address)
 _startBlock: public(uint256)
-_rewardsForStartBlock
+_lastBlock: public(address)
 _userStartBlock: public(HashMap[address,uint256])
+_paidPerToken: public(HashMap[address,uint256])
+_RewardTokenPaid: public(HashMap[address,uint256])
+
 @external
 def __init__(_totalsupply: uint256, _farmToken: address, _rewardToken: address):
     self._totalsupply = 10**8
     self._balanceof[self] = _totalsupply
     self.__farmToken = _farmToken
     self._rewardToken = _rewardToken
+    self._endBlock = 0
     self._startBlock = block.number
+    self._owner = msg.sender
 
 event Transfer:
     _from: indexed(address)
@@ -75,8 +82,8 @@ def transferCaller(_from: address,_to: address, _value: uint256) -> bool:
 #transfer tokens form one adress to another
 @external
 def transferFrom(_from: address, _to: address, _value: uint256) -> bool:
-    assert self._allowance[_from][msg.sender] >= _value, "not allowed to transfer that amount of tokens from given adress"
-    self._allowance[_from][msg.sender] -= _value
+    assert self._allowance[_from][_to] >= _value, "not allowed to transfer that amount of tokens from given adress"
+    self._allowance[_from][_to] -= _value
     return self.transferCaller(_from, _to, _value)
 
 @external
@@ -95,31 +102,43 @@ def withdraw( _value: uint256):
 
 @external
 def deposit(_value: uint256) -> bool:
-        self._userStartBlock[msg.sender] = self._startBlock
-        self._DepositedByUser[msg.sender] = _value
-        self._blockDepositedAt[msg.sender] = block.number
-        ERC20(self.farmToken).transfer(self,_value)
-        Depost(msg.sender,_value)
+    self._DepositedByUser[msg.sender] += _value
+    self._blockDepositedAt[msg.sender] = block.number
+    ERC20(self.farmToken).transferFrom(msg.sender,self,_value)
+    Deposit(msg.sender,_value)
     return True
 
-
+#function to set the value paid for the farm token or the rewardtoken
 @external
-def NewStartBlock():
-    
+    def ValuePaid(_tokenaddress: address, _valuepertoken: uint256):
+        assert msg.sender == self._owner "only owner can call"
+        assert _tokenaddress == self._farmToken || _tokenaddress == self._rewardToken "Only give value of farm or reward token"
+        self._paidPerToken[_tokenaddress] = _valuepertoken
+#sets new start block, by transfering a value of the reward token.
+@external
+def NewStartBlock(_startBlock: uint256, _value: uint256):
+    assert _startBlock >= block.number "new start block needs to be bigger"
+    self._startBlock = _startBlock
+    _RewardTokenPaid[msg.sender] += _value
+    ERC20(self.rewardtoken).transferFrom(msg.sender,self,_value)
 
+
+@internal
+def UpdateBookKeeping(_blockDepoistedAt: uint256):
+    if(_blockDepoistedAt)
 #Get Reward For user based on time and percentage of the total amount
 @internal
 @view
 def GetRewards(_AdressToReward: address) -> uint256:
-    if block.number - self._startBlock == 0:
+    if self._userStartBlock[_AdressToReward] >= block.number:
         return 0
-    UserBalance: uint256 = _DepositedByUser[_AdressToReward]+(block.number-_blockDepositedAt[_AdressToReward])
+    UserBalance: uint256 = _DepositedByUser[_AdressToReward]
     TotalBalance: uint256 = ERC20(self.farmToken).balanceOf(self)
-    PercentageOfTotal: decimal = convert(UserBalance, decimal)/convert(TotalBalance,decimal)*100.0
-    PercentageOfTime: decimal = convert(block.number-self._blockDepositedAt[_AdressToReward],decimal)/convert(block.number-self._userStartBlock[_AdressToReward], decimal)
+    PercentageOfTotal: decimal = convert(UserBalance, decimal)/convert(TotalBalance,decimal)
+    PercentageOfTime: decimal = convert(block.number-self._blockDepositedAt[_AdressToReward],decimal)/
+    convert(block.number-self._userStartBlock[__AdressToReward], decimal)
 
     return convert(
-        convert(ERC20(self.rewardtoken).balanceOf(self),decimal)*(PercentageOfTotal*PercentageOfTime)
+    convert(ERC20(self.rewardtoken).balanceOf(self)-self._RewardTokenPaid[_AdressToReward],decimal)*(PercentageOfTotal*PercentageOfTime)
     ,uint256)
-    return 
 
