@@ -122,7 +122,7 @@ def NewStartBlock(_startBlock: uint256, _value: uint256):
     _RewardTokenPaid[msg.sender] += _value
     ERC20(self.rewardtoken).transferFrom(msg.sender,self,_value)
 
-
+#internal book keeping
 @internal
 def UpdateBookKeeping(_blockDepoistedAt: uint256):
     self._startBlock = mi
