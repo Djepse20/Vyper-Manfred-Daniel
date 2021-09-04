@@ -125,7 +125,7 @@ def NewStartBlock(_startBlock: uint256, _value: uint256):
 
 @internal
 def UpdateBookKeeping(_blockDepoistedAt: uint256):
-    if(_blockDepoistedAt)
+    self._startBlock = mi
 #Get Reward For user based on time and percentage of the total amount
 @internal
 @view
