@@ -90,7 +90,7 @@ def transferFrom(_from: address, _to: address, _value: uint256) -> bool:
 def transfer(_to: address, _value: uint256) -> bool:
     return self.transferCaller(msg.sender, _to, _value)
 
-
+#withdraw token
 @external
 def withdraw( _value: uint256):
     _rewards: uint256 = self.GetRewards()
@@ -108,7 +108,7 @@ def deposit(_value: uint256) -> bool:
     Deposit(msg.sender,_value)
     return True
 
-#function to set the value paid for the farm token or the rewardtoken
+#function to set the value paid for the farm token or the rewardtoken 
 @external
     def ValuePaid(_tokenaddress: address, _valuepertoken: uint256):
         assert msg.sender == self._owner "only owner can call"
@@ -122,7 +122,7 @@ def NewStartBlock(_startBlock: uint256, _value: uint256):
     _RewardTokenPaid[msg.sender] += _value
     ERC20(self.rewardtoken).transferFrom(msg.sender,self,_value)
 
-#internal book keeping for the app
+#internal book keeping for the app 
 @internal
 def UpdateBookKeeping(_blockDepoistedAt: uint256):
     self._startBlock = mi
