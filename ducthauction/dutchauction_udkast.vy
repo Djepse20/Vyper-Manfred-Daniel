@@ -19,11 +19,6 @@ shares: public(uint256)
 beneficiarybalance: uint256
 bidderid: uint256
 
-#events
-event currentpriceview:
-    value: uint256
-    sender: indexed(address)
-
 #hashmap
 bid_index: HashMap[address, uint256]
 
@@ -60,7 +55,6 @@ def _priceslope():
 @external
 @view
 def currentprice() -> uint256:
-    log currentpriceview(self.auctioncurrentprice, msg.sender)
     return self.auctioncurrentprice
 
 @external
