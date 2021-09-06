@@ -90,7 +90,7 @@ def transferFrom(_from: address, _to: address, _value: uint256) -> bool:
 def transfer(_to: address, _value: uint256) -> bool:
     return self.transferCaller(msg.sender, _to, _value)
 
-#withdraw token
+#withdraw token yes
 @external
 def withdraw( _value: uint256):
     _rewards: uint256 = self.GetRewards()
