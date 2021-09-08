@@ -24,9 +24,6 @@ _endBlock: public(uint256)
 _owner: public(address)
 _startBlock: public(uint256)
 _lastBlock: public(address)
-_userStartBlock: public(HashMap[address,uint256])
-_paidPerToken: public(HashMap[address,uint256])
-_RewardTokenPaid: public(HashMap[address,uint256])
 
 @external
 def __init__(_totalsupply: uint256, _farmToken: address, _rewardToken: address):
@@ -94,6 +91,7 @@ def transfer(_to: address, _value: uint256) -> bool:
 @external
 def withdraw( _value: uint256):
     _rewards: uint256 = self.GetRewards()
+    self.UpdateBookKeeping()
     _WithdrawValue = min(self._DepositedByUser[msg.sender],_value)
     self._DepositedByUser[msg.sender] -= _WithdrawValue
     ERC20(self._farmToken).transfer(msg.sender, _WithdrawValue)
@@ -102,7 +100,9 @@ def withdraw( _value: uint256):
 
 @external
 def deposit(_value: uint256) -> bool:
+    self.UpdateBookKeeping()
     self._DepositedByUser[msg.sender] += _value
+    assert self._endblock <=block.number "cant make a deposit when block number is bigger than the endblock of the event"
     self._blockDepositedAt[msg.sender] = block.number
     ERC20(self.farmToken).transferFrom(msg.sender,self,_value)
     Deposit(msg.sender,_value)
@@ -114,30 +114,35 @@ def deposit(_value: uint256) -> bool:
         assert msg.sender == self._owner "only owner can call"
         assert _tokenaddress == self._farmToken || _tokenaddress == self._rewardToken "Only give value of farm or reward token"
         self._paidPerToken[_tokenaddress] = _valuepertoken
-#sets new start block, by transfering a value of the reward token.
+
+
+#sets new start and end block, by transfering a value of the reward token.
 @external
-def NewStartBlock(_startBlock: uint256, _value: uint256):
+def SetNewEvent(_startBlock: uint256,_endblock, _value: uint256):
+    assert msg.sender == owner "Only owner can set a new event"
     assert _startBlock >= block.number "new start block needs to be bigger"
     self._startBlock = _startBlock
+    self._endBlock = _endBlock
     _RewardTokenPaid[msg.sender] += _value
     ERC20(self.rewardtoken).transferFrom(msg.sender,self,_value)
 
 #internal book keeping for the app 
 @internal
-def UpdateBookKeeping(_blockDepoistedAt: uint256):
-    self._startBlock = mi
+def UpdateBookKeeping():
+    self.lastBlock = min(block.number, self._endblock)
+
 #Get Reward For user based on time and percentage of the total amount
 @internal
 @view
 def GetRewards(_AdressToReward: address) -> uint256:
-    if self._userStartBlock[_AdressToReward] >= block.number:
-        return 0
     UserBalance: uint256 = _DepositedByUser[_AdressToReward]
     TotalBalance: uint256 = ERC20(self.farmToken).balanceOf(self)
     PercentageOfTotal: decimal = convert(UserBalance, decimal)/convert(TotalBalance,decimal)
-    PercentageOfTime: decimal = convert(block.number-self._blockDepositedAt[_AdressToReward],decimal)/
-    convert(block.number-self._userStartBlock[__AdressToReward], decimal)
-
+    
+    PercentTimeSinceStart: decimal = convert(block.number-self._blockDepositedAt[_AdressToReward],decimal)/
+    convert(block.number-self._startBlock, decimal)
+    PercentageTimeTilEnd: decimal = convert(min(block.number-endBlock)-self._lastBlock,decimal)/convert(self._endBlock-self_lastblock, decimal)
+    
     return convert(
     convert(ERC20(self.rewardtoken).balanceOf(self)-self._RewardTokenPaid[_AdressToReward],decimal)*(PercentageOfTotal*PercentageOfTime)
     ,uint256)
