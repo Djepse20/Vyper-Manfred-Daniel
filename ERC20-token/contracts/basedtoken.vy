@@ -2,7 +2,9 @@
 
 # Contract to create an ERC20 token
 
+from vyper.interfaces import ERC20
 
+implements: ERC20
 
 TOKEN_NAME: constant(String[10]) = "basedtoken"
 TOKEN_SUPPLY: constant(uint256) = 10**(5+DECCONSTANT)
@@ -17,7 +19,7 @@ event Transfer:
     _to: indexed(address)
     _value: uint256
 
-event Apporve:
+event Approval:
     _owner: indexed(address)
     _spender: indexed(address)
     _value: uint256
@@ -34,7 +36,7 @@ def name() -> String[10]:
 
 @external
 @view
-def totalsupply() -> uint256:
+def totalSupply() -> uint256:
     return TOKEN_SUPPLY
 
 @external
@@ -60,9 +62,9 @@ def _transfer(_from: address, _to:address, _amount: uint256):
     log Transfer(_from, _to, _amount)
 
 @internal
-def _apporve(_owner: address, _spender: address, _amount: uint256):
+def _approve(_owner: address, _spender: address, _amount: uint256):
     self._allowances[_owner][_spender] = _amount
-    log Apporve(_owner, _spender, _amount)
+    log Approval(_owner, _spender, _amount)
 
 @external
 def transfer(_to:address, _amount: uint256) -> bool:
@@ -70,8 +72,8 @@ def transfer(_to:address, _amount: uint256) -> bool:
     return True
 
 @external
-def apporve(_spender: address, _amount: uint256) -> bool:
-    self._apporve(msg.sender, _spender, _amount)
+def approve(_spender: address, _amount: uint256) -> bool:
+    self._approve(msg.sender, _spender, _amount)
     return True
 
 @external 
