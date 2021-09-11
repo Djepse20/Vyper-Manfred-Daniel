@@ -7,10 +7,10 @@ from vyper.interfaces import ERC20
 implements: ERC20
 
 TOKEN_NAME: constant(String[10]) = "basedtoken"
-TOKEN_SUPPLY: constant(uint256) = 10**(5+DECCONSTANT)
+TOKEN_SUPPLY: uint256
 _balances: HashMap[address, uint256]
 _allowances: HashMap[address, HashMap[address, uint256]]
-
+minter: address
 DECCONSTANT: constant(uint256) = 18
 
 
@@ -26,7 +26,10 @@ event Approval:
 
 @external
 def __init__():
-    self._balances[msg.sender] = TOKEN_SUPPLY
+    self.TOKEN_SUPPLY = 10**(5+DECCONSTANT)
+    self._balances[msg.sender] = self.TOKEN_SUPPLY
+    self.minter = msg.sender
+
 
 @external
 @view
@@ -37,7 +40,7 @@ def name() -> String[10]:
 @external
 @view
 def totalSupply() -> uint256:
-    return TOKEN_SUPPLY
+    return self.TOKEN_SUPPLY
 
 @external
 @view
@@ -79,8 +82,32 @@ def approve(_spender: address, _amount: uint256) -> bool:
 @external 
 def transferFrom(_owner: address, _to: address, _amount: uint256) -> bool:
     assert self._allowances[_owner][msg.sender] >= _amount, "The allowance is too low"
-    assert self._balances[_owner]>= _amount, "The balance is not enough for this operation"
+    assert self._balances[_owner] >= _amount, "The balance is not enough for this operation"
     self._balances[_owner] -= _amount
     self._balances[_to] += _amount
     self._allowances[_owner][msg.sender] -= _amount
     return True
+
+@external
+def mint(_to: address, _value: uint256):
+    assert msg.sender  == self.minter
+    assert _to != ZERO_ADDRESS
+    self.TOKEN_SUPPLY += _value
+    self._balances[_to] += _value
+    log Transfer(_to, ZERO_ADDRESS, _value)
+
+@internal
+def _burn(_to: address, _value: uint256):
+    assert _to != ZERO_ADDRESS
+    self.TOKEN_SUPPLY -= _value
+    self._balances[_to] -= _value
+    log Transfer(_to, ZERO_ADDRESS, _value)
+
+@external
+def burn(_value: uint256):
+    self._burn(msg.sender, _value)
+
+@external
+def burnFrom(_to: address, _value: uint256):
+    self._allowances[_to][msg.sender] -= _value
+    self._burn(_to, _value)
